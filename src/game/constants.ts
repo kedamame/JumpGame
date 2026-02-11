@@ -1,0 +1,21 @@
+export const GAME = {
+  width: 960,
+  height: 540,
+  gravity: -1800,
+  jumpVelocity: 900,
+  floorGap: 220,
+  gateOffset: 110,
+  maxHp: 100,
+  comboWindowMs: 5000,
+  baseScore: 100,
+  chapterFloorSpan: 50,
+  chapterBaseAdd: 50,
+  comboBonusThreshold: 10,
+  comboBonusMultiplier: 1.5,
+  maxFloorsKeep: 12,
+  maxParticles: 180,
+  maxParticlesLow: 80,
+  coinLife: 1.6,
+  chestOpenSpeed: 1.8,
+  shakeDecay: 6
+};
