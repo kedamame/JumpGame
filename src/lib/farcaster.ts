@@ -1,8 +1,8 @@
-import sdk from "@farcaster/miniapp-sdk";
+﻿import sdk from "@farcaster/miniapp-sdk";
 
 export type FarcasterContext = {
   inMiniApp: boolean;
-  context: Awaited<ReturnType<typeof sdk.context>> | null;
+  context: Awaited<typeof sdk.context> | null;
   user: {
     fid?: number;
     username?: string;
@@ -21,7 +21,7 @@ export async function initFarcaster(): Promise<FarcasterContext> {
   let user = null;
 
   if (inMiniApp) {
-    context = await sdk.context();
+    context = await sdk.context;
     user = context?.user
       ? {
           fid: context.user.fid,
@@ -37,3 +37,4 @@ export async function initFarcaster(): Promise<FarcasterContext> {
   cached = { inMiniApp, context, user };
   return cached;
 }
+

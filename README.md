@@ -1,4 +1,4 @@
-# Tower Jump (Farcaster Mini App)
+ï»¿# Tower Jump (Farcaster Mini App)
 
 2.5D voxel-style endless tower climb game for Farcaster Mini App.
 
@@ -44,7 +44,7 @@ The manifest contains placeholder values. You must sign and replace them.
 
 ### Frontend Transaction
 - Set `NEXT_PUBLIC_SCOREBOARD_ADDRESS` to the deployed address.
-- Game Over screen shows `Base‚É“o˜^`.
+- Game Over screen shows `Submit To Base`.
 - Transaction uses `writeContract` with Base chainId 8453.
 - Success shows BaseScan URL.
 

@@ -1,4 +1,4 @@
-"use client";
+ï»¿"use client";
 
 import { useAccount, useConnect, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
 import { scoreboardAbi } from "@/abi/Scoreboard";
@@ -25,7 +25,7 @@ export function ScoreSubmit({
   const [error, setError] = useState<string | null>(null);
   const fid = farcaster?.user?.fid ?? 0;
 
-  const { writeContract, isPending: isWriting } = useWriteContract();
+  const { writeContractAsync, isPending: isWriting } = useWriteContract();
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({
     hash: txHash ?? undefined
   });
@@ -33,7 +33,7 @@ export function ScoreSubmit({
   const sendScore = async () => {
     setError(null);
     try {
-      const hash = await writeContract({
+      const hash = await writeContractAsync({
         address: SCOREBOARD_ADDRESS,
         abi: scoreboardAbi,
         functionName: "submitScore",
@@ -66,8 +66,11 @@ export function ScoreSubmit({
           </button>
         )}
         {isConnected && (
-          <button onClick={sendScore} disabled={isWriting || SCOREBOARD_ADDRESS === "0x0000000000000000000000000000000000000000"}>
-            Base‚É“o˜^
+          <button
+            onClick={sendScore}
+            disabled={isWriting || SCOREBOARD_ADDRESS === "0x0000000000000000000000000000000000000000"}
+          >
+            Submit To Base
           </button>
         )}
       </div>
@@ -96,3 +99,4 @@ export function ScoreSubmit({
     </div>
   );
 }
+

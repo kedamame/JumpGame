@@ -1,4 +1,4 @@
-"use client";
+Ôªø"use client";
 
 import type { FarcasterContext } from "@/lib/farcaster";
 import { ScoreSubmit } from "@/components/ScoreSubmit";
@@ -12,7 +12,7 @@ export function WalletPanel({ farcaster }: { farcaster: FarcasterContext | null 
 
       {!farcaster?.inMiniApp && !wcProjectId && (
         <div style={{ marginTop: 8, color: "#aab0c0" }}>
-          WalletConnectÇÕñ¢ê›íËÇ≈Ç∑ÅB`NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID` Ç™ñ≥Ç¢èÍçáÇÕ injected ÇæÇØÇ≈óVÇ◊Ç‹Ç∑ÅB
+          WalletConnect is not configured. You can still play with an injected wallet.
         </div>
       )}
     </div>
