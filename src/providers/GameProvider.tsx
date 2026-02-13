@@ -1,27 +1,70 @@
-"use client";
+'use client';
 
-import { createContext, useContext, useReducer } from "react";
-import { gameReducer, initialState } from "@/game/state";
-import type { GameAction, GameState } from "@/game/types";
+// ===========================================
+// Game State Provider
+// ===========================================
 
-type GameContextValue = {
+import {
+  createContext,
+  useContext,
+  useReducer,
+  useCallback,
+  type ReactNode,
+} from 'react';
+import type { GameState, GameAction, FarcasterContext } from '@/game/types';
+import { gameReducer } from '@/game/state';
+import { createInitialState } from '@/game/logic';
+
+interface GameContextType {
   state: GameState;
   dispatch: React.Dispatch<GameAction>;
-};
+  farcasterContext: FarcasterContext;
+  inMiniApp: boolean;
+  restart: () => void;
+}
 
-const GameContext = createContext<GameContextValue | null>(null);
+const GameContext = createContext<GameContextType | null>(null);
 
-export function GameProvider({ children }: { children: React.ReactNode }) {
-  const [state, dispatch] = useReducer(gameReducer, initialState);
+interface GameProviderProps {
+  children: ReactNode;
+  farcasterContext: FarcasterContext;
+  inMiniApp: boolean;
+}
+
+export function GameProvider({
+  children,
+  farcasterContext,
+  inMiniApp,
+}: GameProviderProps) {
+  const [state, dispatch] = useReducer(
+    gameReducer,
+    { width: 400, height: 600 },
+    ({ width, height }) => createInitialState(width, height)
+  );
+
+  const restart = useCallback(() => {
+    dispatch({ type: 'START' });
+  }, []);
+
   return (
-    <GameContext.Provider value={{ state, dispatch }}>
+    <GameContext.Provider
+      value={{
+        state,
+        dispatch,
+        farcasterContext,
+        inMiniApp,
+        restart,
+      }}
+    >
       {children}
     </GameContext.Provider>
   );
 }
 
 export function useGame() {
-  const ctx = useContext(GameContext);
-  if (!ctx) throw new Error("useGame must be used within GameProvider");
-  return ctx;
+  const context = useContext(GameContext);
+  if (!context) {
+    throw new Error('useGame must be used within GameProvider');
+  }
+  return context;
 }

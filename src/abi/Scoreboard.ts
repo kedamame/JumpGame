@@ -1,40 +1,160 @@
-export const scoreboardAbi = [
+// ===========================================
+// Scoreboard Contract ABI
+// ===========================================
+
+export const SCOREBOARD_ABI = [
   {
-    type: "function",
-    name: "submitScore",
-    stateMutability: "nonpayable",
-    inputs: [
-      { name: "score", type: "uint256" },
-      { name: "maxFloor", type: "uint256" },
-      { name: "maxCombo", type: "uint256" },
-      { name: "fid", type: "uint256" }
-    ],
-    outputs: []
+    inputs: [],
+    stateMutability: 'nonpayable',
+    type: 'constructor',
   },
   {
-    type: "function",
-    name: "best",
-    stateMutability: "view",
-    inputs: [{ name: "", type: "address" }],
+    anonymous: false,
+    inputs: [
+      {
+        indexed: true,
+        internalType: 'address',
+        name: 'player',
+        type: 'address',
+      },
+      {
+        indexed: false,
+        internalType: 'uint256',
+        name: 'score',
+        type: 'uint256',
+      },
+      {
+        indexed: false,
+        internalType: 'uint256',
+        name: 'maxFloor',
+        type: 'uint256',
+      },
+      {
+        indexed: false,
+        internalType: 'uint256',
+        name: 'maxCombo',
+        type: 'uint256',
+      },
+      {
+        indexed: false,
+        internalType: 'uint256',
+        name: 'fid',
+        type: 'uint256',
+      },
+      {
+        indexed: false,
+        internalType: 'uint256',
+        name: 'timestamp',
+        type: 'uint256',
+      },
+    ],
+    name: 'ScoreSubmitted',
+    type: 'event',
+  },
+  {
+    inputs: [],
+    name: 'MAX_COMBO',
     outputs: [
-      { name: "score", type: "uint256" },
-      { name: "maxFloor", type: "uint256" },
-      { name: "maxCombo", type: "uint256" },
-      { name: "fid", type: "uint256" },
-      { name: "timestamp", type: "uint256" }
-    ]
+      {
+        internalType: 'uint256',
+        name: '',
+        type: 'uint256',
+      },
+    ],
+    stateMutability: 'view',
+    type: 'function',
   },
   {
-    type: "event",
-    name: "ScoreSubmitted",
-    inputs: [
-      { name: "player", type: "address", indexed: true },
-      { name: "score", type: "uint256", indexed: false },
-      { name: "maxFloor", type: "uint256", indexed: false },
-      { name: "maxCombo", type: "uint256", indexed: false },
-      { name: "fid", type: "uint256", indexed: false },
-      { name: "timestamp", type: "uint256", indexed: false }
+    inputs: [],
+    name: 'MAX_FLOOR',
+    outputs: [
+      {
+        internalType: 'uint256',
+        name: '',
+        type: 'uint256',
+      },
     ],
-    anonymous: false
-  }
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [],
+    name: 'MAX_SCORE',
+    outputs: [
+      {
+        internalType: 'uint256',
+        name: '',
+        type: 'uint256',
+      },
+    ],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [
+      {
+        internalType: 'address',
+        name: '',
+        type: 'address',
+      },
+    ],
+    name: 'best',
+    outputs: [
+      {
+        internalType: 'uint256',
+        name: 'score',
+        type: 'uint256',
+      },
+      {
+        internalType: 'uint256',
+        name: 'maxFloor',
+        type: 'uint256',
+      },
+      {
+        internalType: 'uint256',
+        name: 'maxCombo',
+        type: 'uint256',
+      },
+      {
+        internalType: 'uint256',
+        name: 'fid',
+        type: 'uint256',
+      },
+      {
+        internalType: 'uint256',
+        name: 'timestamp',
+        type: 'uint256',
+      },
+    ],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [
+      {
+        internalType: 'uint256',
+        name: 'score',
+        type: 'uint256',
+      },
+      {
+        internalType: 'uint256',
+        name: 'maxFloor',
+        type: 'uint256',
+      },
+      {
+        internalType: 'uint256',
+        name: 'maxCombo',
+        type: 'uint256',
+      },
+      {
+        internalType: 'uint256',
+        name: 'fid',
+        type: 'uint256',
+      },
+    ],
+    name: 'submitScore',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
 ] as const;

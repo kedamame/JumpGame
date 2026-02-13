@@ -1,34 +1,91 @@
-"use client";
+'use client';
 
-import { useMemo, useState, useEffect } from "react";
-import { WagmiProvider } from "wagmi";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { createAppConfig } from "@/lib/wagmi";
-import { initFarcaster } from "@/lib/farcaster";
+// ===========================================
+// App Providers (Wagmi + React Query)
+// ===========================================
 
-export function AppProviders({ children }: { children: React.ReactNode }) {
+import { useState, useEffect, type ReactNode } from 'react';
+import { WagmiProvider, type Config } from 'wagmi';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { initFarcasterSDK } from '@/lib/farcaster';
+import { createWebConfig, createMiniAppConfig, defaultConfig } from '@/lib/wagmi';
+import { GameProvider } from './GameProvider';
+import type { FarcasterContext } from '@/game/types';
+
+interface AppProvidersProps {
+  children: ReactNode;
+}
+
+export function AppProviders({ children }: AppProvidersProps) {
+  const [queryClient] = useState(() => new QueryClient());
+  const [wagmiConfig, setWagmiConfig] = useState<Config>(defaultConfig);
   const [inMiniApp, setInMiniApp] = useState(false);
-  const [wcProjectId] = useState<string | undefined>(
-    process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID
-  );
+  const [farcasterContext, setFarcasterContext] = useState<FarcasterContext>({});
+  const [isInitialized, setIsInitialized] = useState(false);
 
   useEffect(() => {
-    (async () => {
-      const ctx = await initFarcaster();
-      setInMiniApp(ctx.inMiniApp);
-    })();
+    async function init() {
+      // Initialize Farcaster SDK
+      const { inMiniApp: isMiniApp, context } = await initFarcasterSDK();
+      setInMiniApp(isMiniApp);
+      setFarcasterContext(context);
+
+      // Create appropriate wagmi config
+      const config = isMiniApp
+        ? await createMiniAppConfig()
+        : createWebConfig();
+      setWagmiConfig(config);
+
+      setIsInitialized(true);
+    }
+
+    init();
   }, []);
 
-  const config = useMemo(() => {
-    return createAppConfig(inMiniApp, wcProjectId);
-  }, [inMiniApp, wcProjectId]);
-
-  const queryClient = useMemo(() => new QueryClient(), []);
+  // Show loading until initialized
+  if (!isInitialized) {
+    return (
+      <div
+        style={{
+          width: '100vw',
+          height: '100vh',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          background: '#1a1a2e',
+          color: '#fff',
+          fontFamily: 'monospace',
+        }}
+      >
+        <div style={{ textAlign: 'center' }}>
+          <div
+            style={{
+              width: '40px',
+              height: '40px',
+              border: '4px solid #4a90d9',
+              borderTopColor: 'transparent',
+              borderRadius: '50%',
+              margin: '0 auto 20px',
+              animation: 'spin 1s linear infinite',
+            }}
+          />
+          <div>Loading...</div>
+          <style>{`
+            @keyframes spin {
+              to { transform: rotate(360deg); }
+            }
+          `}</style>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <WagmiProvider config={config}>
+    <WagmiProvider config={wagmiConfig}>
       <QueryClientProvider client={queryClient}>
-        {children}
+        <GameProvider farcasterContext={farcasterContext} inMiniApp={inMiniApp}>
+          {children}
+        </GameProvider>
       </QueryClientProvider>
     </WagmiProvider>
   );

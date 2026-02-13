@@ -1,66 +1,89 @@
-"use client";
+'use client';
 
-import { useEffect, useMemo, useState } from "react";
-import { GameCanvas } from "@/components/GameCanvas";
-import { HUD } from "@/components/HUD";
-import { Overlay } from "@/components/Overlay";
-import { WalletPanel } from "@/components/WalletPanel";
-import { initFarcaster } from "@/lib/farcaster";
-import type { FarcasterContext } from "@/lib/farcaster";
-import { GameProvider } from "@/providers/GameProvider";
+// ===========================================
+// Main Game Page
+// ===========================================
 
-export default function Page() {
-  const [fc, setFc] = useState<FarcasterContext | null>(null);
-  const [ready, setReady] = useState(false);
+import { AppProviders } from '@/providers/AppProviders';
+import { GameCanvas } from '@/components/GameCanvas';
+import { HUD } from '@/components/HUD';
+import { Overlay } from '@/components/Overlay';
+import { WalletPanel } from '@/components/WalletPanel';
+import { useGame } from '@/providers/GameProvider';
 
-  useEffect(() => {
-    let alive = true;
-    (async () => {
-      const ctx = await initFarcaster();
-      if (!alive) return;
-      setFc(ctx);
-      setReady(true);
-    })();
-    return () => {
-      alive = false;
-    };
-  }, []);
+function GameContent() {
+  const { state, dispatch, farcasterContext, inMiniApp, restart } = useGame();
 
-  const safeInsets = useMemo(() => {
-    if (!fc?.context?.client?.safeAreaInsets) return { top: 0, bottom: 0, left: 0, right: 0 };
-    return fc.context.client.safeAreaInsets;
-  }, [fc]);
+  const handleMuteToggle = () => {
+    dispatch({ type: 'TOGGLE_MUTE' });
+  };
+
+  const handleResume = () => {
+    dispatch({ type: 'RESUME' });
+  };
 
   return (
-    <main
+    <div
       style={{
-        paddingTop: safeInsets.top,
-        paddingBottom: safeInsets.bottom,
-        paddingLeft: safeInsets.left,
-        paddingRight: safeInsets.right
+        width: '100vw',
+        height: '100vh',
+        position: 'relative',
+        overflow: 'hidden',
       }}
-      className="page"
     >
-      <div className="container">
-        <header className="header">
-          <div className="title">Tower Jump</div>
-          <div className="subtitle">
-            2.5D voxel tower climb ? Farcaster Mini App
-          </div>
-        </header>
+      {/* Game Canvas */}
+      <GameCanvas state={state} dispatch={dispatch} />
 
-        <GameProvider>
-          <section className="game-area">
-            <GameCanvas farcaster={fc} ready={ready} />
-            <HUD />
-            <Overlay farcaster={fc} />
-          </section>
+      {/* HUD */}
+      <HUD
+        state={state}
+        farcasterContext={farcasterContext}
+        onMuteToggle={handleMuteToggle}
+      />
 
-          <section className="panel">
-            <WalletPanel farcaster={fc} />
-          </section>
-        </GameProvider>
-      </div>
-    </main>
+      {/* Overlay (Pause/Game Over) */}
+      <Overlay
+        state={state}
+        farcasterContext={farcasterContext}
+        onResume={handleResume}
+        onRestart={restart}
+      />
+
+      {/* Wallet Panel */}
+      <WalletPanel inMiniApp={inMiniApp} farcasterContext={farcasterContext} />
+
+      {/* Jump Button (Mobile) */}
+      {state.status === 'playing' && (
+        <button
+          onClick={() => dispatch({ type: 'JUMP' })}
+          style={{
+            position: 'absolute',
+            bottom: `${(typeof farcasterContext.safeAreaInsets?.bottom === 'number' ? farcasterContext.safeAreaInsets.bottom : 0) + 20}px`,
+            right: '20px',
+            width: '80px',
+            height: '80px',
+            borderRadius: '50%',
+            background: 'rgba(74, 144, 217, 0.8)',
+            border: '3px solid rgba(255, 255, 255, 0.5)',
+            color: '#fff',
+            fontSize: '14px',
+            fontWeight: 'bold',
+            fontFamily: 'monospace',
+            cursor: 'pointer',
+            touchAction: 'manipulation',
+          }}
+        >
+          JUMP
+        </button>
+      )}
+    </div>
+  );
+}
+
+export default function Page() {
+  return (
+    <AppProviders>
+      <GameContent />
+    </AppProviders>
   );
 }

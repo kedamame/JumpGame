@@ -1,85 +1,136 @@
+// ===========================================
+// Game Type Definitions
+// ===========================================
+
 export type GimmickType =
-  | "slide"
-  | "rotate"
-  | "press"
-  | "laser"
-  | "spike"
-  | "steam";
+  | 'slideDoor'
+  | 'rotatingBar'
+  | 'press'
+  | 'laser'
+  | 'crumble'
+  | 'flame';
 
-export type Chapter = {
-  name: string;
-  palette: {
-    bg: string;
-    top: string;
-    left: string;
-    right: string;
-    accent: string;
-    hazard: string;
-    coin: string;
-    coinBig: string;
-    glow: string;
-  };
-  gimmicks: GimmickType[];
-};
-
-export type Floor = {
-  index: number;
+export interface Gimmick {
+  type: GimmickType;
+  x: number;
   y: number;
-  gimmick: GimmickType;
-  phase: number;
+  width: number;
+  height: number;
+  phase: number; // 0-1 animation phase
+  speed: number; // cycles per second
   damage: number;
-};
+  active: boolean; // currently dealing damage?
+  floor: number; // which floor this gimmick belongs to
+  // Type-specific properties
+  variant?: number;
+}
 
-export type CoinParticle = {
+export interface Particle {
   x: number;
   y: number;
   vx: number;
   vy: number;
+  size: number;
+  color: string;
   life: number;
-  big: boolean;
-};
+  maxLife: number;
+  type: 'coin' | 'spark' | 'dust';
+  isBig?: boolean;
+}
 
-export type ChestState = {
-  active: boolean;
-  floorIndex: number;
-  open: number;
-  timer: number;
-};
-
-export type GameState = {
-  running: boolean;
-  gameOver: boolean;
-  score: number;
-  displayScore: number;
-  combo: number;
-  maxCombo: number;
+export interface TreasureChest {
+  x: number;
+  y: number;
   floor: number;
-  maxFloor: number;
+  opened: boolean;
+  openPhase: number; // 0-1 animation
+}
+
+export interface Player {
+  x: number;
+  y: number;
+  vy: number;
+  width: number;
+  height: number;
+  grounded: boolean;
+  jumping: boolean;
   hp: number;
   maxHp: number;
-  lastFloorAt: number;
-  chapterIndex: number;
-  chapterName: string;
-  chapterFlash: number;
-  velocity: number;
-  playerY: number;
-  floors: Floor[];
+  invincibleTimer: number; // frames of invincibility after hit
+  knockbackTimer: number;
+  landingTimer: number; // frames of gimmick immunity after landing
+}
+
+export interface ChapterDef {
+  id: number;
+  name: string;
+  nameJp: string;
+  palette: {
+    bg: string;
+    bgGradient: string;
+    floor: string;
+    floorSide: string;
+    floorTop: string;
+    wall: string;
+    wallSide: string;
+    accent: string;
+    gimmick: string;
+    gimmickActive: string;
+  };
+  gimmicks: GimmickType[];
+  speedMultiplier: number;
+}
+
+export interface GameState {
+  status: 'title' | 'playing' | 'paused' | 'gameover';
+  player: Player;
+  currentFloor: number;
+  maxFloor: number;
+  score: number;
+  combo: number;
+  maxCombo: number;
+  lastFloorTime: number; // timestamp of last floor reach
+  chapter: number;
+  chapterTransition: number; // 0-1 for chapter change animation
   cameraY: number;
-  coins: CoinParticle[];
-  shake: number;
+  gimmicks: Gimmick[];
+  treasureChests: TreasureChest[];
+  particles: Particle[];
+  screenShake: number;
   muted: boolean;
-  lastDamageAt: number;
-  lastHitFloorIndex: number;
-  particleCap: number;
-  chest: ChestState;
-};
+  deltaTime: number;
+  timestamp: number;
+  // For rendering
+  canvasWidth: number;
+  canvasHeight: number;
+}
 
 export type GameAction =
-  | { type: "START" }
-  | { type: "JUMP" }
-  | { type: "TICK"; dt: number; time: number }
-  | { type: "TOGGLE_MUTE" }
-  | { type: "RESET" }
-  | { type: "DAMAGE"; amount: number; time: number; floorIndex: number }
-  | { type: "FLOOR_REACHED"; time: number }
-  | { type: "SET_PARTICLE_CAP"; cap: number };
+  | { type: 'INIT'; width: number; height: number }
+  | { type: 'START' }
+  | { type: 'JUMP' }
+  | { type: 'TICK'; deltaTime: number; timestamp: number }
+  | { type: 'TOGGLE_MUTE' }
+  | { type: 'PAUSE' }
+  | { type: 'RESUME' }
+  | { type: 'GAME_OVER' }
+  | { type: 'RESIZE'; width: number; height: number };
+
+export interface ScoreData {
+  score: number;
+  maxFloor: number;
+  maxCombo: number;
+}
+
+export interface FarcasterContext {
+  fid?: number;
+  username?: string;
+  displayName?: string;
+  pfpUrl?: string;
+  safeAreaInsets?: {
+    top: number;
+    bottom: number;
+    left: number;
+    right: number;
+  };
+}

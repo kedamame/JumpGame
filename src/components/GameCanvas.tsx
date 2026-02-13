@@ -1,116 +1,175 @@
-"use client";
+'use client';
 
-import { useEffect, useRef } from "react";
-import { renderGame } from "@/game/render";
-import { getChapter } from "@/game/logic";
-import { playSound } from "@/game/audio";
-import type { FarcasterContext } from "@/lib/farcaster";
-import { useGame } from "@/providers/GameProvider";
+// ===========================================
+// Game Canvas Component
+// ===========================================
 
-export function GameCanvas({
-  farcaster,
-  ready
-}: {
-  farcaster: FarcasterContext | null;
-  ready: boolean;
-}) {
-  const { state, dispatch } = useGame();
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const stateRef = useRef(state);
+import { useEffect, useRef, useCallback } from 'react';
+import { render, renderTitle } from '@/game/render';
+import { initAudio, setMuted, playSound } from '@/game/audio';
+import type { GameState, GameAction } from '@/game/types';
 
+interface GameCanvasProps {
+  state: GameState;
+  dispatch: React.Dispatch<GameAction>;
+}
+
+export function GameCanvas({ state, dispatch }: GameCanvasProps) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const animationRef = useRef<number>(0);
+  const lastTimeRef = useRef<number>(0);
+  const stateRef = useRef<GameState>(state);
+  const prevFloorRef = useRef<number>(1);
+  const prevHpRef = useRef<number>(100);
+  const prevChapterRef = useRef<number>(0);
+
+  // Keep stateRef up to date
+  stateRef.current = state;
+
+  // Canvas setup (once)
   useEffect(() => {
-    stateRef.current = state;
-  }, [state]);
+    const canvas = canvasRef.current;
+    if (!canvas) return;
 
-  useEffect(() => {
-    if (!ready) return;
-    dispatch({ type: "START" });
-  }, [ready, dispatch]);
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    ctx.imageSmoothingEnabled = false;
 
-  useEffect(() => {
-    let last = performance.now();
-    let raf = 0;
-
-    const loop = (now: number) => {
-      const dt = now - last;
-      last = now;
-      dispatch({ type: "TICK", dt, time: now });
-
-      const canvas = canvasRef.current;
-      if (canvas) {
-        const rect = canvas.getBoundingClientRect();
-        const dpr = window.devicePixelRatio || 1;
-        const width = Math.max(1, Math.floor(rect.width * dpr));
-        const height = Math.max(1, Math.floor(rect.height * dpr));
-        if (canvas.width !== width || canvas.height !== height) {
-          canvas.width = width;
-          canvas.height = height;
-        }
-        const ctx = canvas.getContext("2d");
-        if (ctx) {
-          const snapshot = stateRef.current;
-          const chapter = getChapter(snapshot.floor);
-          renderGame(snapshot, chapter, {
-            ctx,
-            width,
-            height,
-            time: now
-          });
-        }
-      }
-
-      raf = requestAnimationFrame(loop);
+    const setupCanvas = () => {
+      const dpr = window.devicePixelRatio || 1;
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      return { dpr, width: rect.width, height: rect.height };
     };
 
-    raf = requestAnimationFrame(loop);
-    return () => cancelAnimationFrame(raf);
-  }, [dispatch]);
+    let { dpr, width, height } = setupCanvas();
 
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.code === "Space" || e.code === "Enter") {
-        if (!stateRef.current.muted) playSound("jump");
-        dispatch({ type: "JUMP" });
+    dispatch({ type: 'INIT', width, height });
+
+    // Game loop - reads from stateRef to avoid stale closures
+    const gameLoop = (timestamp: number) => {
+      const deltaTime = lastTimeRef.current
+        ? timestamp - lastTimeRef.current
+        : 16;
+      lastTimeRef.current = timestamp;
+
+      const s = stateRef.current;
+
+      if (s.status === 'playing') {
+        dispatch({ type: 'TICK', deltaTime, timestamp: Date.now() });
       }
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      if (s.status === 'title') {
+        renderTitle(ctx, width, height, dpr);
+      } else {
+        render(ctx, s, dpr);
+      }
+
+      animationRef.current = requestAnimationFrame(gameLoop);
     };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+
+    animationRef.current = requestAnimationFrame(gameLoop);
+
+    const handleResize = () => {
+      ({ dpr, width, height } = setupCanvas());
+      dispatch({ type: 'RESIZE', width, height });
+    };
+
+    window.addEventListener('resize', handleResize);
+
+    return () => {
+      cancelAnimationFrame(animationRef.current);
+      window.removeEventListener('resize', handleResize);
+    };
+    // Only run once on mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dispatch]);
 
+  // Sound effects based on state changes
   useEffect(() => {
-    if (state.gameOver && !state.muted) {
-      playSound("death");
+    setMuted(state.muted);
+
+    if (state.currentFloor > prevFloorRef.current) {
+      playSound(state.combo >= 10 ? 'bigCoin' : 'coin');
     }
-  }, [state.gameOver, state.muted]);
+    prevFloorRef.current = state.currentFloor;
 
+    if (state.player.hp < prevHpRef.current) {
+      playSound('hit');
+    }
+    prevHpRef.current = state.player.hp;
+
+    if (state.chapter > prevChapterRef.current && state.status === 'playing') {
+      playSound('chapter');
+    }
+    prevChapterRef.current = state.chapter;
+
+    if (state.status === 'gameover') {
+      playSound('death');
+    }
+  }, [state.muted, state.currentFloor, state.combo, state.player.hp, state.chapter, state.status]);
+
+  // Keyboard input
   useEffect(() => {
-    const dpr = window.devicePixelRatio || 1;
-    const cap = dpr > 2.5 ? 80 : 180;
-    dispatch({ type: "SET_PARTICLE_CAP", cap });
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const s = stateRef.current;
+
+      if (e.code === 'Space' || e.code === 'Enter') {
+        e.preventDefault();
+        initAudio();
+
+        if (s.status === 'title') {
+          dispatch({ type: 'START' });
+          playSound('jump');
+        } else if (s.status === 'playing') {
+          if (s.player.grounded) playSound('jump');
+          dispatch({ type: 'JUMP' });
+        }
+      }
+
+      if (e.code === 'KeyM') {
+        dispatch({ type: 'TOGGLE_MUTE' });
+      }
+
+      if (e.code === 'Escape') {
+        if (s.status === 'playing') dispatch({ type: 'PAUSE' });
+        else if (s.status === 'paused') dispatch({ type: 'RESUME' });
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [dispatch]);
+
+  // Click / Tap input
+  const handleClick = useCallback(() => {
+    const s = stateRef.current;
+    initAudio();
+
+    if (s.status === 'title') {
+      dispatch({ type: 'START' });
+      playSound('jump');
+    } else if (s.status === 'playing') {
+      if (s.player.grounded) playSound('jump');
+      dispatch({ type: 'JUMP' });
+    }
   }, [dispatch]);
 
   return (
-    <div className="canvas-wrap">
-      <canvas
-        ref={canvasRef}
-        onPointerDown={() => {
-          if (!state.muted) playSound("jump");
-          dispatch({ type: "JUMP" });
-        }}
-      />
-      <div className="controls" style={{ position: "absolute", bottom: 12, left: 12, pointerEvents: "auto" }}>
-        <button
-          onClick={() => {
-            if (!state.muted) playSound("jump");
-            dispatch({ type: "JUMP" });
-          }}
-        >
-          JUMP
-        </button>
-        <button className="secondary" onClick={() => dispatch({ type: "TOGGLE_MUTE" })}>
-          {state.muted ? "Unmute" : "Mute"}
-        </button>
-      </div>
-    </div>
+    <canvas
+      ref={canvasRef}
+      onClick={handleClick}
+      style={{
+        width: '100%',
+        height: '100%',
+        display: 'block',
+        touchAction: 'none',
+        cursor: state.status === 'title' ? 'pointer' : 'default',
+        imageRendering: 'pixelated',
+      }}
+    />
   );
 }

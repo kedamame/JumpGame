@@ -1,22 +1,14 @@
-export default function Head() {
-  const baseUrl =
-    process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
-  const embed = {
-    version: "next",
-    action: { type: "launch_frame" },
-    title: "Tower Jump",
-    image: `${baseUrl}/opengraph-image`,
-    button: "Play",
-    homeUrl: baseUrl
-  };
+// ===========================================
+// Head Component (Additional meta tags)
+// ===========================================
 
+export default function Head() {
   return (
     <>
-      <meta
-        name="fc:miniapp"
-        content={JSON.stringify(embed)}
-      />
-      <meta name="viewport" content="width=device-width, initial-scale=1" />
+      <link rel="icon" href="/icon" type="image/png" />
+      <meta name="theme-color" content="#1a1a2e" />
+      <meta name="apple-mobile-web-app-capable" content="yes" />
+      <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     </>
   );
 }
